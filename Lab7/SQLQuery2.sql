@@ -1,6 +1,5 @@
 use Lab5;
 
---1. найти макс., мин., средн. вместит-сть аудиторий + суммарная и общ.кол-во
 Select 
 	min(AUDITORIUM_CAPACITY) as 'min',
 	max(AUDITORIUM_CAPACITY) as 'max',
@@ -9,7 +8,7 @@ Select
 	count(*) as 'count_of_auditoriums'
 		from AUDITORIUM
 
---2. макс.,мин.,средн.,сумм. и общ.кол-во аудиторий опред.типа
+--2.
 Select
 	AUDITORIUM_TYPE.AUDITORIUM_TYPENAME,
 	min(AUDITORIUM_CAPACITY) as 'min',
@@ -21,18 +20,18 @@ Select
 		on AUDITORIUM.AUDITORIUM_TYPE = AUDITORIUM_TYPE.AUDITORIUM_TYPE
 		group by AUDITORIUM_TYPE.AUDITORIUM_TYPENAME
 
---3. рез-т на осн.табл.прогресс - кол-во экз.отметов в опред.инт-ле; сортир.по убыв.
+--3.
 Select * From (
 	select Case 
 				when PROGRESS.NOTE = 10 then '10'
-				when PROGRESS.NOTE = 8 or PROGRESS.NOTE = 9 then '8-9'
-				when PROGRESS.NOTE = 6 or PROGRESS.NOTE = 7 then '6-7'
+				when PROGRESS.NOTE between 8 and 9 then '8-9'
+				when PROGRESS.NOTE between 6 and 7 then '6-7'
 				else '4-5' 
 				end [оценки], COUNT(*)[количество]
 	from PROGRESS group by Case 
 								when PROGRESS.NOTE = 10 then '10'
-								when PROGRESS.NOTE = 8 or PROGRESS.NOTE = 9 then '8-9'
-								when PROGRESS.NOTE = 6 or PROGRESS.NOTE = 7 then '6-7'
+								when PROGRESS.NOTE between 8 and 9 then '8-9'
+								when PROGRESS.NOTE between 6 and 7 then '6-7'
 								else '4-5' 
 								end
 				) as T
@@ -44,8 +43,8 @@ Order by Case[оценки]
 			else 0
 			end
 
---4 запрос, кот.содерж.оценку для кажого курса кажой спецухи; сорт.ср.оц.(с точн.до 2 знаков после ,)
-select FACULTY.FACULTY, GROUPS.PROFESSION,-- GROUPS.COURSE,
+--4
+select FACULTY.FACULTY, GROUPS.PROFESSION, GROUPS.COURSE,
 round (avg (cast (PROGRESS.NOTE as float(4))),2) as 'средняя оценка'
 from FACULTY inner join GROUPS
 on FACULTY.FACULTY = GROUPS.FACULTY
@@ -53,10 +52,10 @@ inner join STUDENT
 on STUDENT.IDGROUP = GROUPS.IDGROUP
 inner join PROGRESS
 on PROGRESS.IDSTUDENT = STUDENT.IDSTUDENT
-group by FACULTY.FACULTY, GROUPS.PROFESSION--, GROUPS.COURSE;
+group by FACULTY.FACULTY, GROUPS.PROFESSION, GROUPS.COURSE;
 
---5 перепис.запрос, в 4 задании так, чтобы исп оценки по БД и ОАиП
-select FACULTY.FACULTY, GROUPS.PROFESSION,-- GROUPS.COURSE,
+-- перепис.запрос, в 4 задании так, чтобы исп оценки по БД и ОАиП
+select FACULTY.FACULTY, GROUPS.PROFESSION, GROUPS.COURSE,
 round (avg (cast (PROGRESS.NOTE as float(4))),2) as 'средняя оценка'
 from FACULTY inner join GROUPS
 on FACULTY.FACULTY = GROUPS.FACULTY
@@ -65,9 +64,9 @@ on STUDENT.IDGROUP = GROUPS.IDGROUP
 inner join PROGRESS
 on PROGRESS.IDSTUDENT = STUDENT.IDSTUDENT
 where PROGRESS.[SUBJECT]='СУБД' or PROGRESS.[SUBJECT] = 'ОАиП'
-group by FACULTY.FACULTY, GROUPS.PROFESSION--, GROUPS.COURSE;
+group by FACULTY.FACULTY, GROUPS.PROFESSION, GROUPS.COURSE;
 
---6 запрос, кот.выводит спецуху, дисциплины и оценки на ТОВ с исп-нием ROLLUP
+--5 запрос, кот.выводит специальности, дисциплины и оценки на ТОВ с исп-нием ROLLUP
 Select GROUPS.PROFESSION, PROGRESS.[SUBJECT],GROUPS.FACULTY,
 round (avg (cast (PROGRESS.NOTE as float(4))),2) as 'средняя оценка'
 from GROUPS inner join FACULTY
@@ -79,6 +78,29 @@ on PROGRESS.IDSTUDENT = STUDENT.IDSTUDENT
 where GROUPS.FACULTY='ТОВ'
 group by GROUPS.PROFESSION, PROGRESS.[SUBJECT], GROUPS.FACULTY
 
+Select GROUPS.PROFESSION, PROGRESS.[SUBJECT],GROUPS.FACULTY,
+round (avg (cast (PROGRESS.NOTE as float(4))),2) as 'средняя оценка'
+from GROUPS inner join FACULTY
+on GROUPS.FACULTY = FACULTY.FACULTY
+inner join STUDENT
+on STUDENT.IDGROUP = GROUPS.IDGROUP
+inner join PROGRESS
+on PROGRESS.IDSTUDENT = STUDENT.IDSTUDENT
+where GROUPS.FACULTY='ТОВ'
+group by rollup (GROUPS.PROFESSION, PROGRESS.[SUBJECT], GROUPS.FACULTY)
+
+--6
+Select GROUPS.PROFESSION, PROGRESS.[SUBJECT],GROUPS.FACULTY,
+round (avg (cast (PROGRESS.NOTE as float(4))),2) as 'средняя оценка'
+from GROUPS inner join FACULTY
+on GROUPS.FACULTY = FACULTY.FACULTY
+inner join STUDENT
+on STUDENT.IDGROUP = GROUPS.IDGROUP
+inner join PROGRESS
+on PROGRESS.IDSTUDENT = STUDENT.IDSTUDENT
+where GROUPS.FACULTY='ТОВ'
+group by cube (GROUPS.PROFESSION, PROGRESS.[SUBJECT], GROUPS.FACULTY)
+
 --7 запрос с рез-том сдачи экз-ов
 Select GROUPS.PROFESSION, PROGRESS.[SUBJECT],GROUPS.FACULTY,
 round (avg (cast (PROGRESS.NOTE as float(4))),2) as 'средняя оценка'
@@ -88,7 +110,7 @@ inner join STUDENT
 on STUDENT.IDGROUP = GROUPS.IDGROUP
 inner join PROGRESS
 on PROGRESS.IDSTUDENT = STUDENT.IDSTUDENT
-where GROUPS.FACULTY like 'ИДиП'
+where GROUPS.FACULTY like 'ТОВ'
 group by GROUPS.PROFESSION, PROGRESS.[SUBJECT], GROUPS.FACULTY
 union all
 Select GROUPS.PROFESSION, PROGRESS.[SUBJECT],GROUPS.FACULTY,
@@ -99,7 +121,29 @@ inner join STUDENT
 on STUDENT.IDGROUP = GROUPS.IDGROUP
 inner join PROGRESS
 on PROGRESS.IDSTUDENT = STUDENT.IDSTUDENT
-where GROUPS.FACULTY like 'ИТ'
+where GROUPS.FACULTY like 'ХТиТ'
+group by GROUPS.PROFESSION, PROGRESS.[SUBJECT], GROUPS.FACULTY
+
+Select GROUPS.PROFESSION, PROGRESS.[SUBJECT],GROUPS.FACULTY,
+round (avg (cast (PROGRESS.NOTE as float(4))),2) as 'средняя оценка'
+from GROUPS inner join FACULTY
+on GROUPS.FACULTY = FACULTY.FACULTY
+inner join STUDENT
+on STUDENT.IDGROUP = GROUPS.IDGROUP
+inner join PROGRESS
+on PROGRESS.IDSTUDENT = STUDENT.IDSTUDENT
+where GROUPS.FACULTY like 'ТОВ'
+group by GROUPS.PROFESSION, PROGRESS.[SUBJECT], GROUPS.FACULTY
+union
+Select GROUPS.PROFESSION, PROGRESS.[SUBJECT],GROUPS.FACULTY,
+round (avg (cast (PROGRESS.NOTE as float(4))),2) as 'средняя оценка'
+from GROUPS inner join FACULTY
+on GROUPS.FACULTY = FACULTY.FACULTY
+inner join STUDENT
+on STUDENT.IDGROUP = GROUPS.IDGROUP
+inner join PROGRESS
+on PROGRESS.IDSTUDENT = STUDENT.IDSTUDENT
+where GROUPS.FACULTY like 'ХТиТ'
 group by GROUPS.PROFESSION, PROGRESS.[SUBJECT], GROUPS.FACULTY
 
 --8
@@ -111,7 +155,7 @@ inner join STUDENT
 on STUDENT.IDGROUP = GROUPS.IDGROUP
 inner join PROGRESS
 on PROGRESS.IDSTUDENT = STUDENT.IDSTUDENT
-where GROUPS.FACULTY like 'ИДиП'
+where GROUPS.FACULTY like 'ТОВ'
 group by GROUPS.PROFESSION, PROGRESS.[SUBJECT], GROUPS.FACULTY
 intersect
 Select GROUPS.PROFESSION, PROGRESS.[SUBJECT],GROUPS.FACULTY,
@@ -122,7 +166,7 @@ inner join STUDENT
 on STUDENT.IDGROUP = GROUPS.IDGROUP
 inner join PROGRESS
 on PROGRESS.IDSTUDENT = STUDENT.IDSTUDENT
-where GROUPS.FACULTY like 'ИТ'
+where GROUPS.FACULTY like 'ХТиТ'
 group by GROUPS.PROFESSION, PROGRESS.[SUBJECT], GROUPS.FACULTY;
 
 --9
@@ -134,7 +178,7 @@ inner join STUDENT
 on STUDENT.IDGROUP = GROUPS.IDGROUP
 inner join PROGRESS
 on PROGRESS.IDSTUDENT = STUDENT.IDSTUDENT
-where GROUPS.FACULTY like 'ИДиП'
+where GROUPS.FACULTY like 'ТОВ'
 group by GROUPS.PROFESSION, PROGRESS.[SUBJECT], GROUPS.FACULTY
 except
 Select GROUPS.PROFESSION, PROGRESS.[SUBJECT],GROUPS.FACULTY,
@@ -145,7 +189,7 @@ inner join STUDENT
 on STUDENT.IDGROUP = GROUPS.IDGROUP
 inner join PROGRESS
 on PROGRESS.IDSTUDENT = STUDENT.IDSTUDENT
-where GROUPS.FACULTY like 'ИТ'
+where GROUPS.FACULTY like 'ХТиТ'
 group by GROUPS.PROFESSION, PROGRESS.[SUBJECT], GROUPS.FACULTY;
 
 --10
@@ -156,5 +200,5 @@ select p1.SUBJECT, p1.NOTE,
 )[количество]
 from PROGRESS p1
 group by p1.SUBJECT, p1.NOTE
-having NOTE = 8 or NOTE = 9
+having NOTE between 8 and 9
 order by NOTE;
